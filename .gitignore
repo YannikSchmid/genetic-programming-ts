@@ -1,4 +1,4 @@
-.dist/*
+dist
 # Yarn
 .yarn/*
 !.yarn/cache
@@ -8,4 +8,7 @@
 !.yarn/sdks
 !.yarn/versions
 
-.src/try/*
+src/try
+
+# Node
+node_modules
