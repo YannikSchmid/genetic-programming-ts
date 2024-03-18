@@ -1,0 +1,21 @@
+{
+    "name": "genetic-programming-ts",
+    "author": {
+        "name": "Yannik Schmid",
+        "email": "y.schmid98@live.com"
+    },
+    "version": "0.1.0",
+    "description": "Genetic programming library in TypeScript",
+    "packageManager": "yarn@4.1.1",
+    "scripts": {
+        "start": "tsx src/try/index.ts"
+    },
+    "devDependencies": {
+        "@types/cli-progress": "^3",
+        "tsx": "^4.7.1",
+        "typescript": "^5.4.2"
+    },
+    "dependencies": {
+        "cli-progress": "^3.12.0"
+    }
+}
