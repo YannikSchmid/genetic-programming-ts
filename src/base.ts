@@ -1,3 +1,6 @@
+import { SortedList } from "./collections";
+import { table, getBorderCharacters } from "table";
+
 export class Fitness {
     wvalues: number[] | undefined;
     private pvalues: number[] | undefined;
@@ -45,7 +48,7 @@ export class Fitness {
     /**
      * Sum of the weighted values. 0 if no values are set.
      */
-    get sum() {
+    get value() {
         return this.wvalues?.reduce((a, c) => a + c, 0) ?? 0;
     }
 
@@ -347,13 +350,55 @@ class Argument implements TreeNode {
     }
 }
 
-export class HallOfFame<T extends IHasFitness> {
-    private content: T[] = [];
+export class HallOfFame<T extends IHasFitness> implements Iterable<T> {
+    private content: SortedList<T> = new SortedList<T>((a, b) => b.fitness.value - a.fitness.value);
 
-    constructor() {}
+    constructor(public max_size: number) {}
 
-    update(individuals: T[]) {
-        this.content.push(...individuals);
-        this.content.sort((a, b) => b.fitness.sum - a.fitness.sum);
+    update(population: T[]) {
+        if (this.max_size <= 0) return;
+        for (let ind of population) {
+            if (
+                this.content.length < this.max_size ||
+                (this.content.getLast() !== undefined &&
+                    ind.fitness.value > this.content.getLast()!.fitness.value)
+            ) {
+                if (this.content.length >= this.max_size) this.content.pop();
+                this.content.insert(ind);
+            }
+        }
+    }
+
+    public clear() {
+        this.content.clear();
+    }
+
+    [Symbol.iterator]() {
+        return this.content[Symbol.iterator]();
+    }
+
+    get length() {
+        return this.content.length;
+    }
+
+    toString() {
+        const data = [...this.content].map((ind, idx) => {
+            let strs: [string, string, string] = [
+                idx + 1 + ".",
+                ind.toString(),
+                ind.fitness.wvalues?.map((v) => v.toPrecision(3)).toString() || "",
+            ];
+            return strs;
+        });
+
+        let header = [
+            ["Hall of Fame", "", ""],
+            ["#", "Function", "Fitness"],
+        ];
+
+        return table(header.concat(data), {
+            border: getBorderCharacters("norc"),
+            spanningCells: [{ col: 0, row: 0, colSpan: 3 }],
+        });
     }
 }

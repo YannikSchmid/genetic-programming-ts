@@ -1,4 +1,5 @@
 import { PrimitiveTree, PrimitiveSet, TreeNode } from "./base";
+import { Collector } from "./collections";
 import * as random from "./random";
 
 // Generation functions // --------------------------------------------------------------------------------
@@ -233,34 +234,6 @@ function collectTypes(
 
 function commonTypes(types1: Collector<string, number>, types2: Collector<string, number>) {
     return [...types1.keys()].filter((x) => types2.has(x));
-}
-
-class Collector<T, S> {
-    private map: Map<T, S[]> = new Map();
-
-    public add(key: T, value: S) {
-        if (this.map.has(key)) {
-            this.map.get(key)!.push(value);
-        } else {
-            this.map.set(key, [value]);
-        }
-    }
-
-    public get(key: T) {
-        return this.map.get(key);
-    }
-
-    public delete(key: T) {
-        this.map.delete(key);
-    }
-
-    public has(key: T) {
-        return this.map.has(key);
-    }
-
-    public keys() {
-        return this.map.keys();
-    }
 }
 
 type ExprFn = (type?: string) => TreeNode[];

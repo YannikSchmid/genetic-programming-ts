@@ -1,4 +1,4 @@
-import { PrimitiveTree } from "./base";
+import { PrimitiveTree, HallOfFame, IHasFitness } from "./base";
 import * as random from "./random";
 import * as progress from "cli-progress";
 
@@ -106,10 +106,13 @@ export function eaMuPlusLambda(
     cxpb: number,
     mutpb: number,
     ngen: number,
-    tools: Tools<"mate" | "mutate" | "eval" | "select">
+    tools: Tools<"mate" | "mutate" | "eval" | "select">,
+    hof?: HallOfFame<PrimitiveTree>
 ) {
     let invalid_ind = population.filter((ind) => !ind.fitness.valid);
     invalid_ind.forEach((ind) => (ind.fitness.values = tools.eval(ind)));
+
+    if (hof) hof.update(population);
 
     const bar = new progress.SingleBar({}, progress.Presets.shades_classic);
 
@@ -120,6 +123,7 @@ export function eaMuPlusLambda(
         let offspring = varOr(population, lambda, cxpb, mutpb, tools);
         let invalid_ind = offspring.filter((ind) => !ind.fitness.valid);
         invalid_ind.forEach((ind) => (ind.fitness.values = tools.eval(ind)));
+        if (hof) hof.update(offspring);
         population = tools.select(population.concat(offspring), mu);
     }
     bar.stop();

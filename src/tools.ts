@@ -63,13 +63,13 @@ export function selTournament<T extends IHasFitness>(
  */
 export function selRoulette<T extends IHasFitness>(individuals: T[], k: number) {
     let sortedIndividuals = individuals.sort(compareFn(true));
-    let fitnessSum = sortedIndividuals.reduce((acc, ind) => acc + ind.fitness.sum, 0);
+    let fitnessSum = sortedIndividuals.reduce((acc, ind) => acc + ind.fitness.value, 0);
     let chosen: T[] = [];
     for (let i = 0; i < k; i++) {
         let r = random() * fitnessSum;
         let acc = 0;
         for (let ind of sortedIndividuals) {
-            acc += ind.fitness.sum;
+            acc += ind.fitness.value;
             if (acc >= r) {
                 chosen.push(ind);
                 break;
@@ -81,7 +81,7 @@ export function selRoulette<T extends IHasFitness>(individuals: T[], k: number) 
 
 function compareFn<T extends IHasFitness>(reverse: boolean) {
     return (a: T, b: T) => {
-        let result = a.fitness.sum - b.fitness.sum;
+        let result = a.fitness.value - b.fitness.value;
         return reverse ? -result : result;
     };
 }
