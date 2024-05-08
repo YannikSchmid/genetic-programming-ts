@@ -14,20 +14,8 @@ export function randInt(min: number, max: number) {
  * @returns A randomly choosen element from the array.
  */
 export function choice<T>(choices: T[]) {
-    if (choices.length === 0) throw new Error("Choices must not be empty");
     var index = randInt(0, choices.length - 1);
     return choices[index];
-}
-
-export function weightedChoice<T>(choices: [T, number][]) {
-    let total = choices.reduce((acc, [_, weight]) => acc + weight, 0);
-    let r = Math.random() * total;
-    let sum = 0;
-    for (let [choice, weight] of choices) {
-        sum += weight;
-        if (r < sum) return choice;
-    }
-    throw new Error("Should not happen");
 }
 
 /**
