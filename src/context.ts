@@ -2,7 +2,7 @@ import { Type } from "./type";
 import * as random from "./random";
 
 export class Context {
-    private context = new Map<string, [importance: number, type: Type]>();
+    public context = new Map<string, [importance: number, type: Type]>();
 
     add(name: string, type: Type, importance = 1) {
         if (this.context.has(name)) {
@@ -16,13 +16,23 @@ export class Context {
         return new ContextExtension(name, type);
     }
 
-    getPrimitives(terminal: boolean, type?: Type) {
+    isCompatible(context: Context) {
+        for (let name of this.context.keys()) {
+            if (!context.context.has(name)) return false;
+        }
+        for (let name of context.context.keys()) {
+            if (!this.context.has(name)) return false;
+        }
+        return true;
+    }
+
+    getPrimitives(arity: (arg: number) => boolean, type?: Type, inputTypes?: Type[]) {
         //console.log("getPrimitives");
         //console.log(this.toString());
         //console.log("given", type?.toString());
         const result = [...this.context.entries()]
             .flatMap(([name, [importance, type]]) =>
-                type.getImidiateTypes().map(([n, t]) => {
+                type.getImidiateTypes([2, 2]).map(([n, t]) => {
                     if (n === null) {
                         return [[name, t], importance] as [[string, Type], number];
                     } else {
@@ -32,8 +42,11 @@ export class Context {
             )
             .filter(
                 ([[_name, t], _]) =>
-                    (terminal ? t.arity === 0 : t.arity > 0) &&
-                    (type ? type.isCompatibleWith(t) : true)
+                    arity(t.arity) &&
+                    (type ? type.isCompatibleWith(t) : true) &&
+                    (inputTypes
+                        ? inputTypes.every((it, i) => it.isCompatibleWith(t.inputTypes[i]))
+                        : true)
             );
         //console.log(
         //    "found",
@@ -60,7 +73,7 @@ export class Context {
         );
     }
 
-    extend(extension?: ContextExtension, importance = 10) {
+    extend(extension?: ContextExtension, importance = 1) {
         if (!extension) return this;
         const newContext = new Context();
         newContext.context = new Map([
@@ -73,13 +86,18 @@ export class Context {
     private generateContextName(): string {
         const characters = "abcdefghijklmnopqrstuvwxyz";
         let name = "";
-        while (name === "" || this.context.has(name)) {
+        const reserved = ["let", "for", "xor"];
+        while (name === "" || this.context.has(name) || reserved.includes(name)) {
             for (let i = 0; i < 3; i++) {
                 const randomIndex = random.randInt(0, characters.length - 1);
                 name += characters.charAt(randomIndex);
             }
         }
         return name;
+    }
+
+    public includes(name: string) {
+        return this.context.has(name);
     }
 }
 

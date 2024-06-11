@@ -1,3 +1,7 @@
+import seedrandom from "seedrandom";
+
+const rng = seedrandom("30");
+
 /**
  * Get a random integer between min and max.
  * @param min
@@ -5,7 +9,7 @@
  * @returns
  */
 export function randInt(min: number, max: number) {
-    return min + Math.floor(Math.random() * (max - min + 1));
+    return min + Math.floor(rng() * (max - min + 1));
 }
 
 /**
@@ -20,8 +24,9 @@ export function choice<T>(choices: T[]) {
 }
 
 export function weightedChoice<T>(choices: [T, number][]) {
+    if (choices.length === 0) throw new Error("Choices must not be empty");
     let total = choices.reduce((acc, [_, weight]) => acc + weight, 0);
-    let r = Math.random() * total;
+    let r = rng() * total;
     let sum = 0;
     for (let [choice, weight] of choices) {
         sum += weight;
@@ -35,7 +40,7 @@ export function weightedChoice<T>(choices: [T, number][]) {
  * @returns A random number between 0 and 1.
  */
 export function random() {
-    return Math.random();
+    return rng();
 }
 
 /**

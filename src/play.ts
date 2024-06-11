@@ -7,9 +7,11 @@ import {
     FunctionType,
     ParamType,
     MapFunctionType,
+    Type,
 } from "./type";
 import * as gp from "./gp";
-import { Individual } from "./tree";
+import { Individual, TreeNode } from "./tree";
+import { random } from "./random";
 
 //const stringT = new PrimType("String");
 const intT = new PrimType("Int");
@@ -77,11 +79,21 @@ const bpt = new ParamType("B");
 const lele = new FunctionType(new CollType(bpt), [bpt]);
 //context.add("Bag", lele);
 
+const expr = (type: Type, context: Context) => gp.genGrow(context, type, 2, 2);
+
 if (true) {
-    const term = gp.genGrow(context, booleanT, 2, 5);
-    const ind = new Individual(context, term);
+    const term = gp.genGrow(context, booleanT, 3, 5);
+    let ind = new Individual(term, context, booleanT, [20, -1]);
     console.log(ind.toString());
+    let copy = ind.copy();
+    console.log(copy.toString());
+    let inde = 0;
+    console.log(copy.getNodeContext(inde));
+    console.log(copy.getNode(inde));
 } else {
+    let term = gp.genFull(context, booleanT, 2, 5);
+    const ind = new Individual(term, context, booleanT, [20, -1]);
+
     const t = new CollType(new ParamType("T"));
     const d = new ParamType("D");
     d.applyTo(new CollType(booleanT));

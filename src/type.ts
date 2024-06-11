@@ -1,3 +1,5 @@
+import { random } from "./random";
+
 export abstract class Type {
     /**
      * The arity of the type. This is the number of input arguments the type takes if it is called.
@@ -23,7 +25,7 @@ export abstract class Type {
         return this._isCompatibleWith(type);
     }
     abstract _isCompatibleWith(type: Type): boolean;
-    abstract getImidiateTypes(): [string | null, Type][];
+    abstract getImidiateTypes(prop?: [number, number]): [string | null, Type][];
     abstract toString(): string;
     /**
      * Returns a formatted string of the type with the given name and arguments.
@@ -42,7 +44,7 @@ export abstract class Type {
     abstract applyTo(type: Type): void;
 }
 
-type Prims = "String" | "Int" | "Boolean" | "Any" | "Float";
+type Prims = string;
 
 export class PrimType extends Type {
     readonly arity = 0;
@@ -103,10 +105,14 @@ export class ObjType extends Type {
         }
         return false;
     }
-    getImidiateTypes(): [string | null, Type][] {
+    getImidiateTypes(prop: [number, number] = [2, 2]): [string | null, Type][] {
+        if (prop) {
+            if (random() > prop[0]) return [];
+            prop[0] = prop[0] / prop[1];
+        }
         const result: [string | null, Type][] = [...this.properties.entries()].flatMap(
             ([name, type]) => {
-                return type.getImidiateTypes().map(([n, t]) => {
+                return type.getImidiateTypes(prop).map(([n, t]) => {
                     if (n === null) return [name, t] as [string, Type];
                     return [name + "." + n, t] as [string, Type];
                 });
@@ -153,8 +159,11 @@ export class ParamType extends Type {
         if (this.extending) return this.extending.isCompatibleWith(type);
         return true;
     }
-    getImidiateTypes(): [null | string, Type][] {
-        if (this.actualType) return [[null, this.actualType]];
+    getImidiateTypes(prop: [number, number] = [2, 2]): [null | string, Type][] {
+        if (this.actualType) {
+            if (!(this.actualType instanceof ObjType)) return [[null, this.actualType]];
+            return this.actualType.getImidiateTypes(prop);
+        }
         return [[null, this]];
     }
     toString() {

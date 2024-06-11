@@ -66,6 +66,8 @@ export function generate(
     max: number,
     condition: (height: number, depth: number) => boolean
 ) {
+    if (type instanceof FunctionType)
+        throw new Error("FunctionType not supporteddddddddddddddddddddd");
     let expr: TreeNode[] = [];
     const height = random.randInt(min, max);
     let stack: { depth: number; type: Type; context: Context }[] = [
@@ -82,7 +84,7 @@ export function generate(
 
         if (condition(height, depth)) {
             // Terminal
-            const prims = context.getPrimitives(true, type);
+            const prims = context.getPrimitives((i) => i === 0, type);
             try {
                 const prim = random.weightedChoice(prims);
                 //console.log("chose", prim[0], prim[1].toString());
@@ -96,7 +98,7 @@ export function generate(
         } else {
             // Function
             try {
-                const prims = context.getPrimitives(false, type);
+                const prims = context.getPrimitives((i) => i > 0, type);
                 const prim = random.weightedChoice(prims);
                 //console.log("chose", prim[0], prim[1].toString());
                 const node = new TreeNode(prim[1], [prim[0], context]);
@@ -104,29 +106,22 @@ export function generate(
                 //console.log("nt", node.type.toString());
                 //console.log("#######");
                 expr.push(node);
-                for (let inType of node.type.inputTypes.slice(1).reverse()) {
+                for (let [arg, inType] of [...node.type.inputTypes.entries()].reverse()) {
                     stack.push({
                         depth: depth + 1,
                         type: inType,
-                        context: context.extend(node.contextExtension),
-                    });
-                }
-                for (let inType of node.type.inputTypes.slice(0, 1).reverse()) {
-                    stack.push({
-                        depth: depth + 1,
-                        type: inType,
-                        context: context,
+                        context: context.extend(node.getContextExtension(arg)),
                     });
                 }
             } catch (err) {
                 // Terminal
-                const prims = context.getPrimitives(true, type);
+                const prims = context.getPrimitives((i) => i === 0, type);
                 try {
                     const prim = random.weightedChoice(prims);
-                    console.log("chose", prim[0], prim[1].toString());
+                    //console.log("chose", prim[0], prim[1].toString());
                     const node = new TreeNode(prim[1], [prim[0], context]);
                     node.type.applyTo(type);
-                    console.log("#######");
+                    //console.log("#######");
                     expr.push(node);
                 } catch (err) {
                     throw new Error("No terminal available for type " + type + "; " + err);
@@ -140,20 +135,78 @@ export function generate(
 // Crossover functions // --------------------------------------------------------------------------------
 
 export function cxOnePoint(ind1: Individual, ind2: Individual): [Individual, Individual] {
+    //return [ind1, ind2];
     if (ind1.size < 2 || ind2.size < 2) return [ind1, ind2]; // No crossover on single-node trees
 
-    let compatible_idx = getCompatibleIdx(ind1, ind2);
+    const compatible_idx = ind1.getCompatibleSwaps(ind2, (n: TreeNode) => n.type.arity > 0);
     if (compatible_idx.length === 0) return [ind1, ind2];
 
-    let [idx1, idx2] = random.choice(compatible_idx);
-
-    let slice1 = ind1.searchSubtree(idx1);
-    let slice2 = ind2.searchSubtree(idx2);
-    let subtree1 = ind1.slice(slice1[0], slice1[1]);
-    let subtree2 = ind2.slice(slice2[0], slice2[1]);
-
-    ind1.splice(slice1[0], slice1[1] - slice1[0], ...subtree2);
-    ind2.splice(slice2[0], slice2[1] - slice2[0], ...subtree1);
+    const [idx1, idx2] = random.choice(compatible_idx);
+    ind1.swapSubtrees(idx1, ind2, idx2);
 
     return [ind1, ind2];
+}
+
+export function cxOnePointLeaf(ind1: Individual, ind2: Individual): [Individual, Individual] {
+    //return [ind1, ind2];
+    if (ind1.size < 2 || ind2.size < 2) return [ind1, ind2]; // No crossover on single-node trees
+
+    const compatible_idx = ind1.getCompatibleSwaps(ind2, (n: TreeNode) => n.type.arity === 0);
+    if (compatible_idx.length === 0) return [ind1, ind2];
+
+    const [idx1, idx2] = random.choice(compatible_idx);
+
+    ind1.swapSubtrees(idx1, ind2, idx2);
+
+    return [ind1, ind2];
+}
+
+// Mutation functions // --------------------------------------------------------------------------------
+
+export function mutUniform(
+    individual: Individual,
+    expr: (type: Type, context: Context) => TreeNode[]
+) {
+    //return individual;
+    if (individual.size < 2) return individual; // No mutation on single-node trees
+    let index = random.randInt(1, individual.size - 1);
+    let parenInputType = individual.getParentInputType(index);
+    let context = individual.getNodeContext(index);
+    let term = expr(parenInputType, context);
+    individual.swapNode(term, index);
+    return individual;
+}
+
+export function mutNodeReplacement(individual: Individual) {
+    //return individual;
+    if (individual.size < 2) return individual; // No mutation on single-node trees
+    let index = random.randInt(1, individual.size - 1);
+    let node = individual.getNode(index);
+    let test = individual.getNodeContext(index);
+    try {
+        const prim = random.choice(
+            individual
+                .getNodeContext(index)
+                .getPrimitives((i) => i === node.type.arity, node.type, node.type.inputTypes)
+        );
+        const newNode = new TreeNode(prim[0][1], [prim[0][0], individual.baseContext]);
+        individual.swapNode(newNode, index);
+    } finally {
+        return individual;
+    }
+}
+
+export function mutShrink(individual: Individual) {
+    if (individual.size < 2) return individual; // No mutation on single-node trees
+
+    const nodes = individual.getNodes((n: TreeNode) => n.type.arity > 0);
+    if (nodes.length === 0) return individual;
+    const node = random.choice(nodes);
+    let parenInputType = individual.getParentInputType(node.idx);
+    let parentContext = individual.getNodeContext(node.idx);
+    try {
+        parentContext.getPrimitives((i) => i === 0, parenInputType);
+    } finally {
+        return individual;
+    }
 }
