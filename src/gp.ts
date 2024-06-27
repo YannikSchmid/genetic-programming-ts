@@ -65,71 +65,75 @@ export function generate(
     min: number,
     max: number,
     condition: (height: number, depth: number) => boolean
-) {
+): TreeNode[] {
     if (type instanceof FunctionType)
         throw new Error("FunctionType not supporteddddddddddddddddddddd");
-    let expr: TreeNode[] = [];
-    const height = random.randInt(min, max);
-    let stack: { depth: number; type: Type; context: Context }[] = [
-        {
-            depth: 0,
-            type: type,
-            context: context,
-        },
-    ];
+    while (true) {
+        try {
+            let expr: TreeNode[] = [];
+            const height = random.randInt(min, max);
+            let stack: { depth: number; type: Type; context: Context }[] = [
+                {
+                    depth: 0,
+                    type: type,
+                    context: context,
+                },
+            ];
 
-    while (stack.length > 0) {
-        let { depth, type, context } = stack.pop()!;
-        if (type instanceof FunctionType) throw new Error("FunctionType not supported");
+            while (stack.length > 0) {
+                let { depth, type, context } = stack.pop()!;
+                if (type instanceof FunctionType) throw new Error("FunctionType not supported");
 
-        if (condition(height, depth)) {
-            // Terminal
-            const prims = context.getPrimitives((i) => i === 0, type);
-            try {
-                const prim = random.weightedChoice(prims);
-                //console.log("chose", prim[0], prim[1].toString());
-                const node = new TreeNode(prim[1], [prim[0], context]);
-                node.type.applyTo(type);
-                //console.log("#######");
-                expr.push(node);
-            } catch (err) {
-                throw new Error("No terminal available for type " + type + "; " + err);
-            }
-        } else {
-            // Function
-            try {
-                const prims = context.getPrimitives((i) => i > 0, type);
-                const prim = random.weightedChoice(prims);
-                //console.log("chose", prim[0], prim[1].toString());
-                const node = new TreeNode(prim[1], [prim[0], context]);
-                node.type.applyTo(type);
-                //console.log("nt", node.type.toString());
-                //console.log("#######");
-                expr.push(node);
-                for (let [arg, inType] of [...node.type.inputTypes.entries()].reverse()) {
-                    stack.push({
-                        depth: depth + 1,
-                        type: inType,
-                        context: context.extend(node.getContextExtension(arg)),
-                    });
+                if (condition(height, depth)) {
+                    // Terminal
+                    const prims = context.getPrimitives((i) => i === 0, type);
+                    try {
+                        const prim = random.weightedChoice(prims);
+                        //console.log("chose", prim[0], prim[1].toString());
+                        const node = new TreeNode(prim[1], [prim[0], context]);
+                        node.type.applyTo(type);
+                        //console.log("#######");
+                        expr.push(node);
+                    } catch (err) {
+                        throw new Error("No terminal available for type " + type + "; " + err);
+                    }
+                } else {
+                    // Function
+                    try {
+                        const prims = context.getPrimitives((i) => i > 0, type);
+                        const prim = random.weightedChoice(prims);
+                        //console.log("chose", prim[0], prim[1].toString());
+                        const node = new TreeNode(prim[1], [prim[0], context]);
+                        node.type.applyTo(type);
+                        //console.log("nt", node.type.toString());
+                        //console.log("#######");
+                        expr.push(node);
+                        for (let [arg, inType] of [...node.type.inputTypes.entries()].reverse()) {
+                            stack.push({
+                                depth: depth + 1,
+                                type: inType,
+                                context: context.extend(node.getContextExtension(arg)),
+                            });
+                        }
+                    } catch (err) {
+                        // Terminal
+                        const prims = context.getPrimitives((i) => i === 0, type);
+                        try {
+                            const prim = random.weightedChoice(prims);
+                            //console.log("chose", prim[0], prim[1].toString());
+                            const node = new TreeNode(prim[1], [prim[0], context]);
+                            node.type.applyTo(type);
+                            //console.log("#######");
+                            expr.push(node);
+                        } catch (err) {
+                            throw new Error("No terminal available for type " + type + "; " + err);
+                        }
+                    }
                 }
-            } catch (err) {
-                // Terminal
-                const prims = context.getPrimitives((i) => i === 0, type);
-                try {
-                    const prim = random.weightedChoice(prims);
-                    //console.log("chose", prim[0], prim[1].toString());
-                    const node = new TreeNode(prim[1], [prim[0], context]);
-                    node.type.applyTo(type);
-                    //console.log("#######");
-                    expr.push(node);
-                } catch (err) {
-                    throw new Error("No terminal available for type " + type + "; " + err);
-                }
             }
-        }
+            return expr;
+        } catch (err) {}
     }
-    return expr;
 }
 
 // Crossover functions // --------------------------------------------------------------------------------

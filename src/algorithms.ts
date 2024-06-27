@@ -93,23 +93,20 @@ export function eaOcl(
     hof?: HallOfFame
 ) {
     return new Observable<number | Individual[]>((subscriber) => {
-        async function helper() {
+        evaluateInvalid(population, tools);
+        if (hof) hof.update(population);
+        for (let i = 0; i < nGen; i++) {
+            let offspring = varOr(population, lambda, cxpb, mutpb, tools);
+            population = offspring.concat(tools.population(sprinkle));
+            population = filterDuplicates(population);
             evaluateInvalid(population, tools);
             if (hof) hof.update(population);
-            for (let i = 0; i < nGen; i++) {
-                let offspring = varOr(population, lambda, cxpb, mutpb, tools);
-                population = offspring; //.concat(tools.population(sprinkle));
-                //population = filterDuplicates(population);
-                evaluateInvalid(population, tools);
-                if (hof) hof.update(population);
-                population = tools.select(population, mu);
-                subscriber.next(i);
-            }
-
-            subscriber.next(population);
-            subscriber.complete();
+            population = tools.select(population, mu);
+            subscriber.next(i);
         }
-        helper().then(() => {});
+
+        subscriber.next(population);
+        subscriber.complete();
     });
 }
 
