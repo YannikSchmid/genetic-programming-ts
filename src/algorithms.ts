@@ -98,7 +98,7 @@ export function eaOcl(
         for (let i = 0; i < nGen; i++) {
             let offspring = varOr(population, lambda, cxpb, mutpb, tools);
             population = offspring.concat(tools.population(sprinkle));
-            population = filterDuplicates(population);
+            //population = filterDuplicates(population);
             evaluateInvalid(population, tools);
             if (hof) hof.update(population);
             population = tools.select(population, mu);
